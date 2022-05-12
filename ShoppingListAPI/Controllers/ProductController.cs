@@ -1,12 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using ShoppingListAPI.Data;
 using ShoppingListAPI.Data.Authentication;
-using ShoppingListAPI.Models;
-using System;
+using ShoppingListAPI.Services;
+using ShoppingListAPI.Services.Product;
+using ShoppingListAPI.Services.Product.Commands;
+using ShoppingListAPI.Services.Product.Queries;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,128 +15,92 @@ namespace ShoppingListAPI.Controllers
     [Route("[controller]")]
     public class ProductController : ControllerBase
     {
-        private readonly ApplicationDbContext _dbContext;
+        private readonly IMediator _mediator;
 
-        private readonly ILogger<ProductController> _logger;
-
-        public ProductController(ApplicationDbContext dbContext, ILogger<ProductController> logger)
+        public ProductController(IMediator mediator)
         {
-            _dbContext = dbContext;
-            _logger = logger;
+            _mediator = mediator;
         }
 
         [HttpGet]
         [Route("")]
-        public async Task<IActionResult> Get(CancellationToken cancellationToken)
+        public async Task<IActionResult> Get(GetAllProductsQuery request, CancellationToken cancellationToken)
         {
-            try
-            {
-                return Ok(await _dbContext.Products.Include(p => p.Category).ToListAsync(cancellationToken));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error getting Products.");
-                return StatusCode(StatusCodes.Status500InternalServerError);
-            }
+            var result = await _mediator.Send(request, cancellationToken);
+
+            if (result.IsSuccess)
+                return Ok(result.Value);
+
+            return StatusCode(result.StatusCode);
         }
 
         [HttpGet]
         [Route("{id}")]
-        public async Task<IActionResult> Get(int id, CancellationToken cancellationToken)
+        public async Task<IActionResult> Get([FromRoute]int id, GetProductByIdQuery request, CancellationToken cancellationToken)
         {
-            try
-            {
-                var entity = await _dbContext.Products.Include(p => p.Category).SingleOrDefaultAsync(p => p.Id.Equals(id), cancellationToken);
+            // Map Id as route values can not be mapped to complex types.
+            request.Id = id;
 
-                if (entity == null)
-                    return NotFound();
+            var result = await _mediator.Send(request, cancellationToken);
 
-                return Ok(entity);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error getting Product for id: {id}", id);
-                return StatusCode(StatusCodes.Status500InternalServerError);
-            }
+            if (result.IsSuccess)
+                return Ok(result.Value);
+
+            return StatusCode(result.StatusCode);
         }
 
         [HttpPost]
         [Route("")]
         [Authorize(Roles = Roles.Admin)]
-        public async Task<IActionResult> Create([FromBody] ProductDTO product, CancellationToken cancellationToken)
+        public async Task<IActionResult> Create([FromBody]CreateProductCommand request, CancellationToken cancellationToken)
         {
-            try
+            if (!ModelState.IsValid)
+                return BadRequest();
+
+            var result = await _mediator.Send(request, cancellationToken);
+
+            if (result.IsSuccess)
             {
-                if (!ModelState.IsValid)
-                    return BadRequest();
+                ProductDTO value = (ProductDTO)result.Value;
+                return CreatedAtAction(nameof(Get), new { Id = value.Id }, value);
+            }                
 
-                var entity = _dbContext.Products.Add(product.AsProduct());
-
-                await _dbContext.SaveChangesAsync(cancellationToken);
-
-                // Load the navigation property
-                _dbContext.Entry(entity.Entity).Reference(p => p.Category).Load();
-
-                return CreatedAtAction(nameof(Get), new { id = entity.Entity.Id }, entity.Entity);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error creating Product: {product}", product);
-                return StatusCode(StatusCodes.Status500InternalServerError);
-            }
+            return StatusCode(result.StatusCode);
         }
 
         [HttpPost]
         [Route("{id}")]
         [Authorize(Roles = Roles.Admin)]
-        public async Task<IActionResult> Edit([FromRoute] int id, [FromBody] ProductDTO product, CancellationToken cancellationToken)
+        public async Task<IActionResult> Edit([FromRoute] int id, [FromBody] EditProductCommand request, CancellationToken cancellationToken)
         {
-            try
-            {
-                if (!ModelState.IsValid)
-                    return BadRequest();
+            // Map Id as route values can not be bound to complex types.
+            request.Id = id;
 
-                var entity = await _dbContext.Products.Include(p => p.Category).SingleOrDefaultAsync(p => p.Id.Equals(id), cancellationToken);
+            if (!ModelState.IsValid)
+                return BadRequest();
 
-                if (entity == null)
-                    return NotFound();
+            var result = await _mediator.Send(request, cancellationToken);
 
-                entity.Name = product.Name;
+            if (result.IsSuccess)
+                return Ok(result.Value);
 
-                await _dbContext.SaveChangesAsync(cancellationToken);
-
-                return Ok(entity);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error editing Product: {id}, {product}", id, product);
-                return StatusCode(StatusCodes.Status500InternalServerError);
-            }
+            return StatusCode(result.StatusCode);
         }
 
         [HttpDelete]
         [Route("{id}")]
         [Authorize(Roles = Roles.Admin)]
-        public async Task<IActionResult> Delete([FromRoute] int id, CancellationToken cancellationToken)
+        public async Task<IActionResult> Delete([FromRoute] int id, DeleteProductCommand request, CancellationToken cancellationToken)
         {
-            try
-            {
-                var entity = await _dbContext.Products.SingleOrDefaultAsync(p => p.Id.Equals(id), cancellationToken);
+            // Map Id as route values can not be bound to complex types.
+            request.Id = id;
 
-                if (entity == null)
-                    return NotFound();
+            var result = await _mediator.Send(request, cancellationToken);
 
-                _dbContext.Products.Remove(entity);
+            if (result.IsSuccess)
+                return Ok(result.Value);
 
-                await _dbContext.SaveChangesAsync(cancellationToken);
-
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error deleting Product for id: {id}", id);
-                return StatusCode(StatusCodes.Status500InternalServerError);
-            }
+            return StatusCode(result.StatusCode);
         }
     }
 }
