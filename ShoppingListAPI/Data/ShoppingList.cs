@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using System;
 using System.Collections.Generic;
 
 namespace ShoppingListAPI.Data
@@ -14,5 +16,15 @@ namespace ShoppingListAPI.Data
         public bool IsCompleted { get; set; }
 
         public List<LineItem> LineItems { get; set; }
+    }
+
+    public class ShoppingListConfiguration : IEntityTypeConfiguration<ShoppingList>
+    {
+        public void Configure(EntityTypeBuilder<ShoppingList> builder)
+        {
+            builder.Property(p => p.Title)
+                .IsRequired(false)
+                .HasMaxLength(32);
+        }
     }
 }
