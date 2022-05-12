@@ -57,10 +57,13 @@ namespace ShoppingListAPI.Controllers
             if (!ModelState.IsValid)
                 return BadRequest();
 
-            var result = (Result<UnitOfMeasureDTO>)await _mediator.Send(request, cancellationToken);
+            var result = await _mediator.Send(request, cancellationToken);
 
             if (result.IsSuccess)
-                return CreatedAtAction(nameof(Get), new { id = result.Value.Id }, result.Value);
+            {
+                UnitOfMeasureDTO value = (UnitOfMeasureDTO)result.Value;
+                return CreatedAtAction(nameof(Get), new { id = value.Id }, value);
+            }
 
             return StatusCode(result.StatusCode);
         }
