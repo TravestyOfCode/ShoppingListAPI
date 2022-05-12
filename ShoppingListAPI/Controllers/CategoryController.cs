@@ -2,6 +2,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShoppingListAPI.Data.Authentication;
+using ShoppingListAPI.Models;
+using ShoppingListAPI.Services;
+using ShoppingListAPI.Services.Category;
 using ShoppingListAPI.Services.Category.Commands;
 using ShoppingListAPI.Services.Category.Queries;
 using System.Threading;
@@ -52,10 +55,10 @@ namespace ShoppingListAPI.Controllers
             if (!ModelState.IsValid)
                 return BadRequest();
 
-            var result = await _mediator.Send(request, cancellationToken);
+            var result = (Result<CategoryDTO>)await _mediator.Send(request, cancellationToken);
 
             if (result.IsSuccess)
-                return Ok(result.Value);
+                return CreatedAtAction(nameof(Get), new { id = result.Value.Id }, result.Value);
 
             return StatusCode(result.StatusCode);
         }
