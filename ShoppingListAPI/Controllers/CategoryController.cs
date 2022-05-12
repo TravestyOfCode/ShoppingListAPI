@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ShoppingListAPI.Data;
+using ShoppingListAPI.Data.Authentication;
 using ShoppingListAPI.Models;
 using System;
 using System.Threading;
@@ -40,6 +42,7 @@ namespace ShoppingListAPI.Controllers
 
         [HttpPost]
         [Route("")]
+        [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> Create([FromBody] CategoryDTO category, CancellationToken cancellationToken)
         {
             if (!ModelState.IsValid)
@@ -60,6 +63,7 @@ namespace ShoppingListAPI.Controllers
 
         [HttpPost]
         [Route("{id}")]
+        [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> Edit([FromRoute]int id, [FromBody] CategoryDTO category, CancellationToken cancellationToken)
         {
             if (!ModelState.IsValid)
@@ -86,6 +90,7 @@ namespace ShoppingListAPI.Controllers
 
         [HttpDelete]
         [Route("{id}")]
+        [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> Delete([FromRoute] int id, CancellationToken cancellationToken)
         {
             var entity = await _dbContext.Categories.SingleOrDefaultAsync(p => p.Id.Equals(id), cancellationToken);
