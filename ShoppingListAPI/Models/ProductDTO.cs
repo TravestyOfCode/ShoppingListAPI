@@ -1,4 +1,5 @@
 ﻿using ShoppingListAPI.Data;
+using System.ComponentModel.DataAnnotations;
 
 namespace ShoppingListAPI.Models
 {
@@ -6,6 +7,8 @@ namespace ShoppingListAPI.Models
     {
         public int CategoryId { get; set; }
 
+        [Required]
+        [MaxLength(64)]
         public string Name { get; set; }
 
         internal Product AsProduct() => new() { Name = Name, CategoryId = CategoryId };
