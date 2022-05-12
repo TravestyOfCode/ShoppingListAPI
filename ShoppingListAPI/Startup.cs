@@ -1,3 +1,4 @@
+using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -9,6 +10,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using ShoppingListAPI.Data;
 using ShoppingListAPI.Data.Authentication;
+using System.Reflection;
 using System.Text;
 
 namespace ShoppingListAPI
@@ -56,6 +58,9 @@ namespace ShoppingListAPI
                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["JWT:Secret"]))
                     };
                 });
+
+            // MediatR
+            services.AddMediatR(Assembly.GetExecutingAssembly());
 
             services.AddControllers();
         }
