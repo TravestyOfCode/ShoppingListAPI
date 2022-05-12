@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using ShoppingListAPI.Data;
 using ShoppingListAPI.Models;
 using System;
@@ -17,9 +19,12 @@ namespace ShoppingListAPI.Controllers
     {
         private readonly ApplicationDbContext _dbContext;
 
-        public LineItemController(ApplicationDbContext dbContext)
+        private readonly ILogger<LineItemController> _logger;
+
+        public LineItemController(ApplicationDbContext dbContext, ILogger<LineItemController> logger)
         {
             _dbContext = dbContext;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -27,19 +32,27 @@ namespace ShoppingListAPI.Controllers
         [Authorize]
         public async Task<IActionResult> Get([FromRoute] int id, CancellationToken cancellationToken)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            // Get the shopping list to ensure this user created it
-            var entities = await _dbContext.ShoppingLists
-                .Where(p => p.Id.Equals(id) && p.UserId.Equals(userId))
-                .Include(p => p.LineItems)
-                .Select(p => p.LineItems)
-                .SingleOrDefaultAsync(cancellationToken);
+                // Get the shopping list to ensure this user created it
+                var entities = await _dbContext.ShoppingLists
+                    .Where(p => p.Id.Equals(id) && p.UserId.Equals(userId))
+                    .Include(p => p.LineItems)
+                    .Select(p => p.LineItems)
+                    .SingleOrDefaultAsync(cancellationToken);
 
-            if (entities == null)
-                return NotFound();
+                if (entities == null)
+                    return NotFound();
 
-            return Ok(entities);
+                return Ok(entities);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error getting LineItems for id: {id}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
         }
 
         [HttpGet]
@@ -47,19 +60,27 @@ namespace ShoppingListAPI.Controllers
         [Authorize]
         public async Task<IActionResult> Get([FromRoute] int id, [FromRoute] int lineId, CancellationToken cancellationToken)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            // Get the shopping list to ensure this user created it
-            var entities = await _dbContext.ShoppingLists
-                .Where(p => p.Id.Equals(id) && p.UserId.Equals(userId))
-                .Include(p => p.LineItems)
-                .Select(p => p.LineItems.SingleOrDefault(p => p.Id.Equals(lineId)))
-                .SingleOrDefaultAsync(cancellationToken);
+                // Get the shopping list to ensure this user created it
+                var entities = await _dbContext.ShoppingLists
+                    .Where(p => p.Id.Equals(id) && p.UserId.Equals(userId))
+                    .Include(p => p.LineItems)
+                    .Select(p => p.LineItems.SingleOrDefault(p => p.Id.Equals(lineId)))
+                    .SingleOrDefaultAsync(cancellationToken);
 
-            if (entities == null)
-                return NotFound();
+                if (entities == null)
+                    return NotFound();
 
-            return Ok(entities);
+                return Ok(entities);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error getting LineItem for id: {id}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
         }
 
         [HttpPost]
@@ -67,17 +88,25 @@ namespace ShoppingListAPI.Controllers
         [Authorize]
         public async Task<IActionResult> Create([FromRoute] int id, LineItemDTO line, CancellationToken cancellationToken)
         {
-            if (!ModelState.IsValid)
-                return BadRequest();
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest();
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            line.ShoppingListId = id;
-            var entity = _dbContext.LineItems.Add(line.AsLineItem());
+                line.ShoppingListId = id;
+                var entity = _dbContext.LineItems.Add(line.AsLineItem());
 
-            await _dbContext.SaveChangesAsync(cancellationToken);
+                await _dbContext.SaveChangesAsync(cancellationToken);
 
-            return CreatedAtAction(nameof(Get), new { id = entity.Entity.Id }, entity.Entity);
+                return CreatedAtAction(nameof(Get), new { id = entity.Entity.Id }, entity.Entity);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error creating LineItem: {id}, {line}", id, line);
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
         }
 
         [HttpPost]
@@ -85,26 +114,34 @@ namespace ShoppingListAPI.Controllers
         [Authorize]
         public async Task<IActionResult> Edit([FromRoute] int id, [FromRoute] int lineId, LineItemDTO line, CancellationToken cancellationToken)
         {
-            if (!ModelState.IsValid)
-                return BadRequest();
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest();
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            // Get via ShoppingList to verify the user can modify the line
-            var entity = await _dbContext.ShoppingLists
-                .Include(p => p.LineItems)
-                .Where(p => p.Id.Equals(id) && p.UserId.Equals(userId))
-                .Select(p => p.LineItems.SingleOrDefault(p => p.Id.Equals(lineId)))
-                .SingleOrDefaultAsync(cancellationToken);
+                // Get via ShoppingList to verify the user can modify the line
+                var entity = await _dbContext.ShoppingLists
+                    .Include(p => p.LineItems)
+                    .Where(p => p.Id.Equals(id) && p.UserId.Equals(userId))
+                    .Select(p => p.LineItems.SingleOrDefault(p => p.Id.Equals(lineId)))
+                    .SingleOrDefaultAsync(cancellationToken);
 
-            if (entity == null)
-                return NotFound();
+                if (entity == null)
+                    return NotFound();
 
-            line.MapTo(entity);
+                line.MapTo(entity);
 
-            await _dbContext.SaveChangesAsync(cancellationToken);
+                await _dbContext.SaveChangesAsync(cancellationToken);
 
-            return Ok();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error editing LineItem: {id}, {line}", id, line);
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
         }
 
         [HttpDelete]
@@ -112,22 +149,30 @@ namespace ShoppingListAPI.Controllers
         [Authorize]
         public async Task<IActionResult> Delete([FromRoute] int id, [FromRoute]int lineId, CancellationToken cancellationToken)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            var entity = await _dbContext.ShoppingLists
-                .Include(p => p.LineItems)
-                .Where(p => p.Id.Equals(id) && p.UserId.Equals(userId))
-                .Select(p => p.LineItems.SingleOrDefault(p => p.Id.Equals(lineId)))
-                .SingleOrDefaultAsync(cancellationToken);
+                var entity = await _dbContext.ShoppingLists
+                    .Include(p => p.LineItems)
+                    .Where(p => p.Id.Equals(id) && p.UserId.Equals(userId))
+                    .Select(p => p.LineItems.SingleOrDefault(p => p.Id.Equals(lineId)))
+                    .SingleOrDefaultAsync(cancellationToken);
 
-            if (entity == null)
-                return NotFound();
+                if (entity == null)
+                    return NotFound();
 
-            _dbContext.LineItems.Remove(entity);
+                _dbContext.LineItems.Remove(entity);
 
-            await _dbContext.SaveChangesAsync(cancellationToken);
+                await _dbContext.SaveChangesAsync(cancellationToken);
 
-            return Ok();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error deleting LineItem for id: {id}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
         }
     }
 }

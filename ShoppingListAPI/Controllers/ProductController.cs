@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using ShoppingListAPI.Data;
 using ShoppingListAPI.Data.Authentication;
 using ShoppingListAPI.Models;
@@ -16,28 +18,47 @@ namespace ShoppingListAPI.Controllers
     {
         private readonly ApplicationDbContext _dbContext;
 
-        public ProductController(ApplicationDbContext dbContext)
+        private readonly ILogger<ProductController> _logger;
+
+        public ProductController(ApplicationDbContext dbContext, ILogger<ProductController> logger)
         {
             _dbContext = dbContext;
+            _logger = logger;
         }
 
         [HttpGet]
         [Route("")]
         public async Task<IActionResult> Get(CancellationToken cancellationToken)
         {
-            return Ok(await _dbContext.Products.Include(p => p.Category).ToListAsync(cancellationToken));
+            try
+            {
+                return Ok(await _dbContext.Products.Include(p => p.Category).ToListAsync(cancellationToken));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error getting Products.");
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
         }
 
         [HttpGet]
         [Route("{id}")]
         public async Task<IActionResult> Get(int id, CancellationToken cancellationToken)
         {
-            var entity = await _dbContext.Products.Include(p => p.Category).SingleOrDefaultAsync(p => p.Id.Equals(id), cancellationToken);
+            try
+            {
+                var entity = await _dbContext.Products.Include(p => p.Category).SingleOrDefaultAsync(p => p.Id.Equals(id), cancellationToken);
 
-            if (entity == null)
-                return NotFound();
+                if (entity == null)
+                    return NotFound();
 
-            return Ok(entity);
+                return Ok(entity);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error getting Product for id: {id}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
         }
 
         [HttpPost]
@@ -45,12 +66,13 @@ namespace ShoppingListAPI.Controllers
         [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> Create([FromBody] ProductDTO product, CancellationToken cancellationToken)
         {
-            if (!ModelState.IsValid)
-                return BadRequest();
-
-            var entity = _dbContext.Products.Add(product.AsProduct());
             try
             {
+                if (!ModelState.IsValid)
+                    return BadRequest();
+
+                var entity = _dbContext.Products.Add(product.AsProduct());
+
                 await _dbContext.SaveChangesAsync(cancellationToken);
 
                 // Load the navigation property
@@ -58,9 +80,10 @@ namespace ShoppingListAPI.Controllers
 
                 return CreatedAtAction(nameof(Get), new { id = entity.Entity.Id }, entity.Entity);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return StatusCode(500);
+                _logger.LogError(ex, "Unexpected error creating Product: {product}", product);
+                return StatusCode(StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -69,25 +92,26 @@ namespace ShoppingListAPI.Controllers
         [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> Edit([FromRoute] int id, [FromBody] ProductDTO product, CancellationToken cancellationToken)
         {
-            if (!ModelState.IsValid)
-                return BadRequest();
-
-            var entity = await _dbContext.Products.Include(p => p.Category).SingleOrDefaultAsync(p => p.Id.Equals(id), cancellationToken);
-
-            if (entity == null)
-                return NotFound();
-
-            entity.Name = product.Name;
-
             try
             {
+                if (!ModelState.IsValid)
+                    return BadRequest();
+
+                var entity = await _dbContext.Products.Include(p => p.Category).SingleOrDefaultAsync(p => p.Id.Equals(id), cancellationToken);
+
+                if (entity == null)
+                    return NotFound();
+
+                entity.Name = product.Name;
+
                 await _dbContext.SaveChangesAsync(cancellationToken);
 
                 return Ok(entity);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return StatusCode(500);
+                _logger.LogError(ex, "Unexpected error editing Product: {id}, {product}", id, product);
+                return StatusCode(StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -96,22 +120,23 @@ namespace ShoppingListAPI.Controllers
         [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> Delete([FromRoute] int id, CancellationToken cancellationToken)
         {
-            var entity = await _dbContext.Products.SingleOrDefaultAsync(p => p.Id.Equals(id), cancellationToken);
-
-            if (entity == null)
-                return NotFound();
-
-            _dbContext.Products.Remove(entity);
-
             try
             {
+                var entity = await _dbContext.Products.SingleOrDefaultAsync(p => p.Id.Equals(id), cancellationToken);
+
+                if (entity == null)
+                    return NotFound();
+
+                _dbContext.Products.Remove(entity);
+
                 await _dbContext.SaveChangesAsync(cancellationToken);
 
                 return Ok();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return StatusCode(500);
+                _logger.LogError(ex, "Unexpected error deleting Product for id: {id}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError);
             }
         }
     }
