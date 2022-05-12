@@ -1,12 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using ShoppingListAPI.Data;
 using ShoppingListAPI.Data.Authentication;
-using ShoppingListAPI.Models;
-using System;
+using ShoppingListAPI.Services;
+using ShoppingListAPI.Services.UnitOfMeasure;
+using ShoppingListAPI.Services.UnitOfMeasure.Commands;
+using ShoppingListAPI.Services.UnitOfMeasure.Queries;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,125 +15,89 @@ namespace ShoppingListAPI.Controllers
     [Route("[controller]")]
     public class UnitOfMeasureController : ControllerBase
     {
-        private readonly ApplicationDbContext _dbContext;
+        public readonly IMediator _mediator;
 
-        private readonly ILogger<UnitOfMeasureController> _logger;
-
-        public UnitOfMeasureController(ApplicationDbContext dbContext, ILogger<UnitOfMeasureController> logger)
+        public UnitOfMeasureController(IMediator mediator)
         {
-            _dbContext = dbContext;
-            _logger = logger;
+            _mediator = mediator;
         }
 
         [HttpGet]
         [Route("")]
-        public async Task<IActionResult> Get(CancellationToken cancellationToken)
+        public async Task<IActionResult> Get(GetAllUnitOfMeasuresQuery request, CancellationToken cancellationToken)
         {
-            try
-            {
-                return Ok(await _dbContext.UnitOfMeasures.ToListAsync(cancellationToken));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error getting UnitOfMeasures.");
-                return StatusCode(StatusCodes.Status500InternalServerError);
-            }
+            var result = await _mediator.Send(request, cancellationToken);
+
+            if (result.IsSuccess)
+                return Ok(result.Value);
+
+            return StatusCode(result.StatusCode);
         }
 
         [HttpGet]
         [Route("{id}")]
-        public async Task<IActionResult> Get([FromRoute]int id, CancellationToken cancellationToken)
+        public async Task<IActionResult> Get([FromRoute]int id, GetUnitOfMeasureByIdQuery request, CancellationToken cancellationToken)
         {
-            try
-            {
-                var entity = await _dbContext.UnitOfMeasures.SingleOrDefaultAsync(p => p.Id.Equals(id), cancellationToken);
+            // Map the Id to the request as route values can not be mapped to complex types.
+            request.Id = id;
 
-                if (entity == null)
-                    return NotFound();
+            var result = await _mediator.Send(request, cancellationToken);
 
-                return Ok(entity);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error getting UnitOfMeasure for id: {id}.", id);
-                return StatusCode(StatusCodes.Status500InternalServerError);
-            }
+            if (result.IsSuccess)
+                return Ok(result.Value);
+
+            return StatusCode(result.StatusCode);
         }
 
         [HttpPost]
         [Route("")]
         [Authorize(Roles = Roles.Admin)]
-        public async Task<IActionResult> Create([FromBody]UnitOfMeasureDTO uom, CancellationToken cancellationToken)
+        public async Task<IActionResult> Create([FromBody]CreateUnitOfMeasureCommand request, CancellationToken cancellationToken)
         {
-            try
-            {
-                if (!ModelState.IsValid)
-                    return BadRequest();
+            if (!ModelState.IsValid)
+                return BadRequest();
 
-                var entity = _dbContext.UnitOfMeasures.Add(uom.AsUnitOfMeasure());
+            var result = (Result<UnitOfMeasureDTO>)await _mediator.Send(request, cancellationToken);
 
-                await _dbContext.SaveChangesAsync(cancellationToken);
+            if (result.IsSuccess)
+                return CreatedAtAction(nameof(Get), new { id = result.Value.Id }, result.Value);
 
-                return CreatedAtAction(nameof(Get), new { id = entity.Entity.Id }, entity.Entity);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error creating UnitOfMeasure: {uom}.", uom);
-                return StatusCode(StatusCodes.Status500InternalServerError);
-            }
+            return StatusCode(result.StatusCode);
         }
 
         [HttpPost]
         [Route("{id}")]
         [Authorize(Roles = Roles.Admin)]
-        public async Task<IActionResult> Edit([FromRoute] int id, [FromBody] UnitOfMeasureDTO uom, CancellationToken cancellationToken)
+        public async Task<IActionResult> Edit([FromRoute] int id, [FromBody] EditUnitOfMeasureCommand request, CancellationToken cancellationToken)
         {
-            try
-            {
-                if (!ModelState.IsValid)
-                    return BadRequest();
+            // Map the Id to the request as route values can not be mapped to complex types.
+            request.Id = id;
 
-                var entity = await _dbContext.UnitOfMeasures.SingleOrDefaultAsync(p => p.Id.Equals(id), cancellationToken);
+            if (!ModelState.IsValid)
+                return BadRequest();
 
-                if (entity == null)
-                    return NotFound();
+            var result = await _mediator.Send(request, cancellationToken);
 
-                uom.MapTo(entity);
+            if (result.IsSuccess)
+                return Ok(result.Value);
 
-                await _dbContext.SaveChangesAsync(cancellationToken);
-
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error editing UnitOfMeasure: {id}, {uom}.", id, uom);
-                return StatusCode(StatusCodes.Status500InternalServerError);
-            }
+            return StatusCode(result.StatusCode);
         }
 
         [HttpDelete]
         [Route("{id}")]
         [Authorize(Roles = Roles.Admin)]
-        public async Task<IActionResult> Delete([FromRoute] int id, CancellationToken cancellationToken)
+        public async Task<IActionResult> Delete([FromRoute] int id, DeleteUnitOfMeasureCommand request, CancellationToken cancellationToken)
         {
-            try
-            {
-                var entity = await _dbContext.UnitOfMeasures.SingleOrDefaultAsync(p => p.Id.Equals(id), cancellationToken);
+            // Map the Id to the request as route values can not be mapped to complex types.
+            request.Id = id;
 
-                if (entity == null)
-                    return NotFound();
+            var result = await _mediator.Send(request, cancellationToken);
 
-                _dbContext.UnitOfMeasures.Remove(entity);
+            if (result.IsSuccess)
+                return Ok(result.Value);
 
-                await _dbContext.SaveChangesAsync(cancellationToken);
-
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error deleting UnitOfMeasure for id: {id}.", id);
-                return StatusCode(StatusCodes.Status500InternalServerError);
-            }
+            return StatusCode(result.StatusCode);
         }
     }
 }
