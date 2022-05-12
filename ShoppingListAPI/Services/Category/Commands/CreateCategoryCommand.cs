@@ -38,7 +38,7 @@ namespace ShoppingListAPI.Services.Category.Commands
 
                 await _dbContext.SaveChangesAsync(cancellationToken);
 
-                return Result.Ok(entity.Entity.AsCategoryDTO());
+                return Result.Created(entity.Entity.AsCategoryDTO());
             }
             catch (Exception ex)
             {
