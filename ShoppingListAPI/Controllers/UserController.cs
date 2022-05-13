@@ -29,11 +29,7 @@ namespace ShoppingListAPI.Controllers
             var result = await _mediator.Send(request, cancellationToken);
 
             if (result.IsSuccess)
-            {
-                var token = (JwtSecurityToken)result.Value;
-
-                return Ok(new { token, expires = token.ValidTo });
-            }
+                return Ok(result.Value);
 
             return StatusCode(result.StatusCode);
         }

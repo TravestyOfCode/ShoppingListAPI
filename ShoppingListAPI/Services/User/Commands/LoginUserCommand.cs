@@ -60,7 +60,7 @@ namespace ShoppingListAPI.Services.User.Commands
                     signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
                     );
 
-                return Result.Ok(token);
+                return Result.Ok(new { token = new JwtSecurityTokenHandler().WriteToken(token), expiration = token.ValidTo } );
             }
             catch (Exception ex)
             {
