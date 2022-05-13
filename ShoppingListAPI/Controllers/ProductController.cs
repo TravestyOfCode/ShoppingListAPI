@@ -62,7 +62,7 @@ namespace ShoppingListAPI.Controllers
             if (result.IsSuccess)
             {
                 ProductDTO value = (ProductDTO)result.Value;
-                return CreatedAtAction(nameof(Get), new { Id = value.Id }, value);
+                return CreatedAtAction(nameof(Get), new { value.Id }, value);
             }                
 
             return StatusCode(result.StatusCode);
