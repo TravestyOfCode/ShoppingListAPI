@@ -1,14 +1,12 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using ShoppingListAPI.Data;
-using ShoppingListAPI.Data.Authentication;
-using ShoppingListAPI.Models;
-using System;
+using ShoppingListAPI.Services.Category;
+using ShoppingListAPI.Services.Category.Commands;
+using ShoppingListAPI.Services.Category.Queries;
 using System.Threading;
 using System.Threading.Tasks;
+using static ShoppingListAPI.Models.Strings;
 
 namespace ShoppingListAPI.Controllers
 {
@@ -16,126 +14,94 @@ namespace ShoppingListAPI.Controllers
     [Route("[controller]")]
     public class CategoryController : ControllerBase
     {
-        private readonly ApplicationDbContext _dbContext;
+        private readonly IMediator _mediator;
 
-        private readonly ILogger<CategoryController> _logger;
-
-        public CategoryController(ApplicationDbContext dbContext, ILogger<CategoryController> logger)
+        public CategoryController(IMediator mediator)
         {
-            _dbContext = dbContext;
-            _logger = logger;
+            _mediator = mediator;
         }
 
         [HttpGet]
         [Route("")]
-        public async Task<IActionResult> Get(CancellationToken cancellationToken)
+        public async Task<IActionResult> Get(GetAllCategoriesQuery request, CancellationToken cancellationToken)
         {
-            try
-            {
-                return Ok(await _dbContext.Categories.ToListAsync(cancellationToken));
-            }
-            catch(Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error getting Categories.");
-                return StatusCode(StatusCodes.Status500InternalServerError);
-            }
+            var result = await _mediator.Send(request, cancellationToken);
+
+            if (result.IsSuccess)
+                return Ok(result.Value);
+
+            return StatusCode(result.StatusCode);
         }
 
         [HttpGet]
         [Route("{id}")]
-        public async Task<IActionResult> Get(int id, CancellationToken cancellationToken)
+        public async Task<IActionResult> Get([FromRoute]GetCategoryByIdQuery request, CancellationToken cancellationToken)
         {
-            try
-            {
-                var entity = await _dbContext.Categories.SingleOrDefaultAsync(p => p.Id.Equals(id), cancellationToken);
+            var result = await _mediator.Send(request, cancellationToken);
 
-                if (entity == null)
-                    return NotFound();
+            if (result.IsSuccess)
+                return Ok(result.Value);
 
-                return Ok(entity);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error getting Categories for id: {id}", id);
-                return StatusCode(StatusCodes.Status500InternalServerError);
-            }
+            return StatusCode(result.StatusCode);
         }
 
         [HttpPost]
         [Route("")]
         [Authorize(Roles = Roles.Admin)]
-        public async Task<IActionResult> Create([FromBody] CategoryDTO category, CancellationToken cancellationToken)
+        public async Task<IActionResult> Create([FromBody] CreateCategoryCommand request, CancellationToken cancellationToken)
         {
-            try
-            { 
             if (!ModelState.IsValid)
                 return BadRequest();
 
-            var entity = _dbContext.Categories.Add(category.AsCategory());
+            var result = await _mediator.Send(request, cancellationToken);
 
-                await _dbContext.SaveChangesAsync(cancellationToken);
-
-                return CreatedAtAction(nameof(Get), new { id = entity.Entity.Id }, entity.Entity);
-            }
-            catch (Exception ex)
+            if (result.IsSuccess)
             {
-                _logger.LogError(ex, "Unexpected error creating Category: {category}", category);
-                return StatusCode(StatusCodes.Status500InternalServerError);
+                CategoryDTO value = (CategoryDTO)result.Value;
+                return CreatedAtAction(nameof(Get), new { id = value.Id }, value);
             }
+
+            return StatusCode(result.StatusCode);
         }
 
         [HttpPost]
         [Route("{id}")]
         [Authorize(Roles = Roles.Admin)]
-        public async Task<IActionResult> Edit([FromRoute]int id, [FromBody] CategoryDTO category, CancellationToken cancellationToken)
+        public async Task<IActionResult> Edit([FromRoute]int id, [FromBody]EditCategoryCommand request, CancellationToken cancellationToken)
         {
-            try
-            {
-                if (!ModelState.IsValid)
-                    return BadRequest();
+            // Bind the Id as route values cannot bind into complex type
+            request.Id = id;
 
-                var entity = await _dbContext.Categories.SingleOrDefaultAsync(p => p.Id.Equals(id), cancellationToken);
+            if (!ModelState.IsValid)
+                return BadRequest();
 
-                if (entity == null)
-                    return NotFound();
+            var result = await _mediator.Send(request, cancellationToken);
 
-                entity.Name = category.Name;
+            if (result.IsSuccess)
+                return Ok(result.Value);
 
-                await _dbContext.SaveChangesAsync(cancellationToken);
+            return StatusCode(result.StatusCode);
 
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error editing Category: {id}, {category}", id, category);
-                return StatusCode(StatusCodes.Status500InternalServerError);
-            }
         }
 
         [HttpDelete]
         [Route("{id}")]
         [Authorize(Roles = Roles.Admin)]
-        public async Task<IActionResult> Delete([FromRoute] int id, CancellationToken cancellationToken)
+        public async Task<IActionResult> Delete([FromRoute] int id, DeleteCategoryCommand request, CancellationToken cancellationToken)
         {
-            try
-            {
-                var entity = await _dbContext.Categories.SingleOrDefaultAsync(p => p.Id.Equals(id), cancellationToken);
+            // Bind the Id as route values cannot bind into complex type
+            request.Id = id;
 
-                if (entity == null)
-                    return NotFound();
+            if (!ModelState.IsValid)
+                return BadRequest();
 
-                _dbContext.Categories.Remove(entity);
+            var result = await _mediator.Send(request, cancellationToken);
 
-                await _dbContext.SaveChangesAsync(cancellationToken);
+            if (result.IsSuccess)
+                return Ok(result.Value);
 
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error deleting Category for id: {id}", id);
-                return StatusCode(StatusCodes.Status500InternalServerError);
-            }
+            return StatusCode(result.StatusCode);
         }
     }
-    
+
 }

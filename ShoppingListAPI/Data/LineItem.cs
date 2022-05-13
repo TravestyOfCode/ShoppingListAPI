@@ -9,6 +9,8 @@ namespace ShoppingListAPI.Data
 
         public int ShoppingListId { get; set; }
 
+        public ShoppingList ShoppingList { get; set; }
+
         public bool IsCompleted { get; set; }
 
         public int ProductId { get; set; }
