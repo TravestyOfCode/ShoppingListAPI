@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShoppingListAPI.Data.Authentication;
-using ShoppingListAPI.Services;
 using ShoppingListAPI.Services.Product;
 using ShoppingListAPI.Services.Product.Commands;
 using ShoppingListAPI.Services.Product.Queries;
