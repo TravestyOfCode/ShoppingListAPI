@@ -58,6 +58,8 @@ namespace ShoppingListAPI.Services
             return result;
         }
 
+        public static Result Unauthorized() => new(401);
+
         public static Result Forbidden() => new(403);
 
         public static Result NotFound() => new(404);
