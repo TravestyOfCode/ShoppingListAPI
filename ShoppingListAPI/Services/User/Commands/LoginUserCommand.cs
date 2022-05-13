@@ -23,32 +23,32 @@ namespace ShoppingListAPI.Services.User.Commands
 
     public class LoginCommandHandler : IRequestHandler<LoginUserCommand, IResult>
     {
-        private readonly UserManager<IdentityUser> _userManager;
+        private readonly SignInManager<IdentityUser> _signInManager;
 
         private readonly ILogger<LoginCommandHandler> _logger;
 
         private readonly IConfiguration _configuration;
 
-        public LoginCommandHandler(UserManager<IdentityUser> userManager, ILogger<LoginCommandHandler> logger, IConfiguration configuration)
+        public LoginCommandHandler(SignInManager<IdentityUser> signInManager, ILogger<LoginCommandHandler> logger, IConfiguration configuration)
         {
-            _userManager = userManager;
             _logger = logger;
             _configuration = configuration;
+            _signInManager = signInManager;
         }
 
         public async Task<IResult> Handle(LoginUserCommand request, CancellationToken cancellationToken)
         {
             try
             {
-                var user = await _userManager.FindByNameAsync(request.UserName);
+                
+                var user = await _signInManager.UserManager.FindByNameAsync(request.UserName);
 
-                if(user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
+                if(user == null || !await _signInManager.UserManager.CheckPasswordAsync(user, request.Password))
                 {
                     return Result.Unauthorized();
                 }
 
-                // Get all user claims and put into token
-                var claims = await _userManager.GetClaimsAsync(user);
+                var userPrincipal = await _signInManager.CreateUserPrincipalAsync(user);
 
                 var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Secret"]));
 
@@ -56,7 +56,7 @@ namespace ShoppingListAPI.Services.User.Commands
                     issuer: _configuration["JWT:Issuer"],
                     audience: _configuration["JWT:Audience"],
                     expires: DateTime.Now.AddHours(5),
-                    claims: claims,
+                    claims: userPrincipal.Claims,
                     signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
                     );
 
