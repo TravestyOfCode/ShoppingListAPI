@@ -4,6 +4,7 @@ using ShoppingListAPI.Services.User.Commands;
 using System.IdentityModel.Tokens.Jwt;
 using System.Threading;
 using System.Threading.Tasks;
+using static ShoppingListAPI.Models.Strings;
 
 namespace ShoppingListAPI.Controllers
 {
@@ -45,7 +46,7 @@ namespace ShoppingListAPI.Controllers
                 return BadRequest();
 
             // If the user is not an admin, they can't set the IsAdmin value
-            if (!User.IsInRole(Resource.Admin))
+            if (!User.IsInRole(Roles.Admin))
                 request.IsAdmin = false;
 
             var result = await _mediator.Send(request, cancellationToken);

@@ -5,6 +5,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading;
 using System.Threading.Tasks;
+using static ShoppingListAPI.Models.Strings;
 
 namespace ShoppingListAPI.Services.User.Commands
 {
@@ -55,10 +56,10 @@ namespace ShoppingListAPI.Services.User.Commands
                 if (!result.Succeeded)
                     return Result.ServerError();
 
-                await _userManager.AddToRoleAsync(user, Resource.User);
+                await _userManager.AddToRoleAsync(user, Roles.User);
                 if(request.IsAdmin)
                 {
-                    await _userManager.AddToRoleAsync(user, Resource.Admin);
+                    await _userManager.AddToRoleAsync(user, Roles.Admin);
                 }
 
                 return Result.Created();

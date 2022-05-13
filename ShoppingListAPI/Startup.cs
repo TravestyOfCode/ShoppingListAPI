@@ -9,9 +9,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using ShoppingListAPI.Data;
-using ShoppingListAPI.Data.Authentication;
 using System.Reflection;
 using System.Text;
+using static ShoppingListAPI.Models.Strings;
 
 namespace ShoppingListAPI
 {

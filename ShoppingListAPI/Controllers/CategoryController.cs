@@ -1,12 +1,12 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ShoppingListAPI.Data.Authentication;
 using ShoppingListAPI.Services.Category;
 using ShoppingListAPI.Services.Category.Commands;
 using ShoppingListAPI.Services.Category.Queries;
 using System.Threading;
 using System.Threading.Tasks;
+using static ShoppingListAPI.Models.Strings;
 
 namespace ShoppingListAPI.Controllers
 {
