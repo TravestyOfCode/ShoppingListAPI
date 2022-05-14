@@ -13,9 +13,8 @@ namespace ShoppingListAPI.Services.Product.Commands
     {
         public int Id { get; set; }
 
-        public int CategoryId { get; set; }
+        public int? CategoryId { get; set; }
 
-        [Required]
         [MaxLength(64)]
         public string Name { get; set; }
 
@@ -24,8 +23,11 @@ namespace ShoppingListAPI.Services.Product.Commands
             if (product == null)
                 return;
 
-            product.CategoryId = CategoryId;
-            product.Name = Name;
+            if(CategoryId.HasValue)
+                product.CategoryId = CategoryId.Value;
+
+            if(Name != null)
+                product.Name = Name;
         }
     }
 

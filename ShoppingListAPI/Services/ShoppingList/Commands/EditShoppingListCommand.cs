@@ -20,7 +20,9 @@ namespace ShoppingListAPI.Services.ShoppingList.Commands
 
         public DateTime? TripDate { get; set; }
 
-        public bool IsCompleted { get; set; }
+        public bool TripDateIsSet { get; set; }
+
+        public bool? IsCompleted { get; set; }
 
         //public List<LineItem> LineItems { get; set; }
 
@@ -29,9 +31,15 @@ namespace ShoppingListAPI.Services.ShoppingList.Commands
             if (shoppingList == null)
                 return;
 
-            shoppingList.Title = Title;
-            shoppingList.TripDate = TripDate;
-            shoppingList.IsCompleted = IsCompleted;
+            if (Title != null)
+                shoppingList.Title = Title;
+
+            if (TripDateIsSet)
+                shoppingList.TripDate = TripDate;
+
+            if (IsCompleted.HasValue)
+                shoppingList.IsCompleted = IsCompleted.Value;
+
             //LineItems.MapTo(shoppingList.LineItems);
         }
     }
