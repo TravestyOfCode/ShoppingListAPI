@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using ShoppingListAPI.Services.LineItem;
 using ShoppingListAPI.Services.LineItem.Commands;
 using ShoppingListAPI.Services.LineItem.Queries;
+using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -68,8 +69,8 @@ namespace ShoppingListAPI.Controllers
 
             if (result.IsSuccess)
             {
-                var lineItem = (LineItemDTO)result.Value;
-                return CreatedAtAction(nameof(Get), new { lineItem.Id }, lineItem);
+                var lineItem = (List<LineItemDTO>)result.Value;
+                return CreatedAtRoute(new { id = id }, lineItem);
             }
 
             return StatusCode(result.StatusCode);
