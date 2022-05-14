@@ -19,23 +19,30 @@ namespace ShoppingListAPI.Services.LineItem.Commands
 
         public int ShoppingListId { get; set; }
 
-        public bool IsCompleted { get; set; }
+        public bool? IsCompleted { get; set; }
 
-        public int ProductId { get; set; }
+        public int? ProductId { get; set; }
 
-        public decimal Quantity { get; set; }
+        public decimal? Quantity { get; set; }
 
-        public int UnitOfMeasureId { get; set; }
+        public int? UnitOfMeasureId { get; set; }
 
         internal void MapTo(Data.LineItem lineItem)
         {
             if (lineItem == null)
                 return;
 
-            lineItem.IsCompleted = IsCompleted;
-            lineItem.ProductId = ProductId;
-            lineItem.Quantity = Quantity;
-            lineItem.UnitOfMeasureId = UnitOfMeasureId;
+            if (IsCompleted.HasValue)
+                lineItem.IsCompleted = IsCompleted.Value;
+
+            if (ProductId.HasValue)
+                lineItem.ProductId = ProductId.Value;
+
+            if (Quantity.HasValue)
+                lineItem.Quantity = Quantity.Value;
+
+            if (UnitOfMeasureId.HasValue)
+                lineItem.UnitOfMeasureId = UnitOfMeasureId.Value;
         }
     }
 
