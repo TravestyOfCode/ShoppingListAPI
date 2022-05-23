@@ -23,8 +23,10 @@ namespace ShoppingListAPI.Controllers
 
         [HttpGet]
         [Route("")]
-        public async Task<IActionResult> Get(GetAllCategoriesQuery request, CancellationToken cancellationToken)
+        public async Task<IActionResult> Get(CancellationToken cancellationToken)
         {
+            GetAllCategoriesQuery request = new GetAllCategoriesQuery();
+
             var result = await _mediator.Send(request, cancellationToken);
 
             if (result.IsSuccess)

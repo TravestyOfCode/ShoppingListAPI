@@ -24,11 +24,13 @@ namespace ShoppingListAPI.Controllers
         [HttpGet]
         [Route("shoppinglist/{id}/lineitem")]
         [Authorize]
-        public async Task<IActionResult> Get([FromRoute] int id, GetAllLineItemsByShoppingListIdAndUserIdQuery request,  CancellationToken cancellationToken)
+        public async Task<IActionResult> Get([FromRoute] int id, CancellationToken cancellationToken)
         {
-            // Map the Id to the request as route values can not be mapped to complex types.
-            request.Id = id;
-            request.UserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            GetAllLineItemsByShoppingListIdAndUserIdQuery request = new GetAllLineItemsByShoppingListIdAndUserIdQuery()
+            {
+                Id = id,
+                UserId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            };
 
             var result = await _mediator.Send(request, cancellationToken);
 
@@ -41,12 +43,14 @@ namespace ShoppingListAPI.Controllers
         [HttpGet]
         [Route("shoppinglist/{id}/lineitem/{lineId}")]
         [Authorize]
-        public async Task<IActionResult> Get([FromRoute] int id, [FromRoute] int lineId, GetLineItemByIdAndShoppingListIdQuery request, CancellationToken cancellationToken)
+        public async Task<IActionResult> Get([FromRoute] int id, [FromRoute] int lineId, CancellationToken cancellationToken)
         {
-            // Map the Id to the request as route values can not be mapped to complex types.
-            request.Id = lineId;
-            request.ShoppingListId = id;
-            request.UserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            GetLineItemByIdAndShoppingListIdQuery request = new GetLineItemByIdAndShoppingListIdQuery()
+            {
+                Id = lineId,
+                ShoppingListId = id,
+                UserId = User.FindFirstValue(ClaimTypes.NameIdentifier),
+            };
 
             var result = await _mediator.Send(request, cancellationToken);
 
@@ -97,12 +101,14 @@ namespace ShoppingListAPI.Controllers
         [HttpDelete]
         [Route("shoppinglist/{id}/lineitem/{lineId}")]
         [Authorize]
-        public async Task<IActionResult> Delete([FromRoute] int id, [FromRoute] int lineId, DeleteLineItemCommand request, CancellationToken cancellationToken)
+        public async Task<IActionResult> Delete([FromRoute] int id, [FromRoute] int lineId, CancellationToken cancellationToken)
         {
-            // Map the Id to the request as route values can not be mapped to complex types.
-            request.Id = lineId;
-            request.ShoppingListId = id;
-            request.UserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            DeleteLineItemCommand request = new DeleteLineItemCommand()
+            {                
+                Id = lineId,
+                ShoppingListId = id,
+                UserId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            };
 
             var result = await _mediator.Send(request, cancellationToken);
 

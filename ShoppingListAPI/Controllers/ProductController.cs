@@ -23,8 +23,10 @@ namespace ShoppingListAPI.Controllers
 
         [HttpGet]
         [Route("")]
-        public async Task<IActionResult> Get(GetAllProductsQuery request, CancellationToken cancellationToken)
+        public async Task<IActionResult> Get(CancellationToken cancellationToken)
         {
+            GetAllProductsQuery request = new GetAllProductsQuery();
+
             var result = await _mediator.Send(request, cancellationToken);
 
             if (result.IsSuccess)
@@ -35,11 +37,13 @@ namespace ShoppingListAPI.Controllers
 
         [HttpGet]
         [Route("{id}")]
-        public async Task<IActionResult> Get([FromRoute]int id, GetProductByIdQuery request, CancellationToken cancellationToken)
+        public async Task<IActionResult> Get([FromRoute]int id, CancellationToken cancellationToken)
         {
-            // Map Id as route values can not be mapped to complex types.
-            request.Id = id;
-
+            GetProductByIdQuery request = new GetProductByIdQuery()
+            {
+                Id = id
+            };
+            
             var result = await _mediator.Send(request, cancellationToken);
 
             if (result.IsSuccess)
@@ -89,10 +93,12 @@ namespace ShoppingListAPI.Controllers
         [HttpDelete]
         [Route("{id}")]
         [Authorize(Roles = Roles.Admin)]
-        public async Task<IActionResult> Delete([FromRoute] int id, DeleteProductCommand request, CancellationToken cancellationToken)
+        public async Task<IActionResult> Delete([FromRoute] int id, CancellationToken cancellationToken)
         {
-            // Map Id as route values can not be bound to complex types.
-            request.Id = id;
+            DeleteProductCommand request = new DeleteProductCommand()
+            {
+                Id = id
+            };
 
             var result = await _mediator.Send(request, cancellationToken);
 

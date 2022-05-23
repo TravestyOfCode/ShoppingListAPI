@@ -23,8 +23,10 @@ namespace ShoppingListAPI.Controllers
 
         [HttpGet]
         [Route("")]
-        public async Task<IActionResult> Get(GetAllUnitOfMeasuresQuery request, CancellationToken cancellationToken)
+        public async Task<IActionResult> Get(CancellationToken cancellationToken)
         {
+            GetAllUnitOfMeasuresQuery request = new GetAllUnitOfMeasuresQuery();
+
             var result = await _mediator.Send(request, cancellationToken);
 
             if (result.IsSuccess)
@@ -35,10 +37,12 @@ namespace ShoppingListAPI.Controllers
 
         [HttpGet]
         [Route("{id}")]
-        public async Task<IActionResult> Get([FromRoute]int id, GetUnitOfMeasureByIdQuery request, CancellationToken cancellationToken)
+        public async Task<IActionResult> Get([FromRoute]int id, CancellationToken cancellationToken)
         {
-            // Map the Id to the request as route values can not be mapped to complex types.
-            request.Id = id;
+            GetUnitOfMeasureByIdQuery request = new GetUnitOfMeasureByIdQuery()
+            {
+                Id = id
+            };
 
             var result = await _mediator.Send(request, cancellationToken);
 
@@ -89,10 +93,12 @@ namespace ShoppingListAPI.Controllers
         [HttpDelete]
         [Route("{id}")]
         [Authorize(Roles = Roles.Admin)]
-        public async Task<IActionResult> Delete([FromRoute] int id, DeleteUnitOfMeasureCommand request, CancellationToken cancellationToken)
+        public async Task<IActionResult> Delete([FromRoute] int id, CancellationToken cancellationToken)
         {
-            // Map the Id to the request as route values can not be mapped to complex types.
-            request.Id = id;
+            DeleteUnitOfMeasureCommand request = new DeleteUnitOfMeasureCommand()
+            {
+                Id = id
+            };
 
             var result = await _mediator.Send(request, cancellationToken);
 

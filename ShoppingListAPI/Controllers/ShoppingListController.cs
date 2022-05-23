@@ -24,9 +24,12 @@ namespace ShoppingListAPI.Controllers
 
         [HttpGet]
         [Route("")]
-        public async Task<IActionResult> Get(GetAllShoppingListsByUserQuery request, CancellationToken cancellationToken)
+        public async Task<IActionResult> Get( CancellationToken cancellationToken)
         {
-            request.UserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            GetAllShoppingListsByUserQuery request = new GetAllShoppingListsByUserQuery()
+            {
+                UserId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            };
 
             var result = await _mediator.Send(request, cancellationToken);
 
@@ -38,11 +41,13 @@ namespace ShoppingListAPI.Controllers
 
         [HttpGet]
         [Route("{id}")]
-        public async Task<IActionResult> Get([FromRoute] int id, GetShoppingListByUserAndIdQuery request,  CancellationToken cancellationToken)
+        public async Task<IActionResult> Get([FromRoute] int id, CancellationToken cancellationToken)
         {
-            // Map the Id to the request as route values can not be mapped to complex types.
-            request.Id = id;
-            request.UserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            GetShoppingListByUserAndIdQuery request = new GetShoppingListByUserAndIdQuery()
+            {
+                Id = id,
+                UserId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            };
 
             var result = await _mediator.Send(request, cancellationToken);
 
@@ -93,11 +98,14 @@ namespace ShoppingListAPI.Controllers
         [HttpDelete]
         [Route("{id}")]
         [Authorize]
-        public async Task<IActionResult> Delete([FromRoute] int id, DeleteShoppingListCommand request, CancellationToken cancellationToken)
+        public async Task<IActionResult> Delete([FromRoute] int id, CancellationToken cancellationToken)
         {
-            // Map the Id to the request as route values can not be mapped to complex types.
-            request.Id = id;
-            request.UserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            DeleteShoppingListCommand request = new DeleteShoppingListCommand()
+            {
+
+                Id = id,
+                UserId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            };
 
             var result = await _mediator.Send(request, cancellationToken);
 
